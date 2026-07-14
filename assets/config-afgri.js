@@ -48,6 +48,10 @@ const TICKET_PORTAL_CONFIG = {
       subcategories: ["Data not loading", "Airtime not loading", "Bundle / package query"],
     },
     {
+      category: "Log a Request",
+      subcategories: ["Data", "Voice", "Airtime"],
+    },
+    {
       category: "Other",
       subcategories: ["General inquiry"],
     },
