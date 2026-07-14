@@ -377,7 +377,20 @@
         test: (v) => v.trim().length >= 10,
         msg: "Please describe the issue in a bit more detail (10+ characters).",
       },
-    ];
+      // financial_account_number / subscriber_id only exist on some pages
+      // (e.g. canal-connect.html) - feature-detected so pages without them
+      // (index.html, afgri-connect.html) aren't affected.
+      form.financial_account_number && {
+        el: form.financial_account_number,
+        test: (v) => v.trim().length > 0,
+        msg: "Financial account number is required.",
+      },
+      form.subscriber_id && {
+        el: form.subscriber_id,
+        test: (v) => v.trim().length > 0,
+        msg: "Subscriber ID is required.",
+      },
+    ].filter(Boolean);
 
     fields.forEach(({ el, test, msg }) => {
       if (!test(el.value)) {
@@ -557,6 +570,10 @@
         "",
         "-- Submitted via client ticket portal --",
         `Company: ${form.company.value.trim()}`,
+        ...(form.financial_account_number
+          ? [`Financial account number: ${form.financial_account_number.value.trim()}`]
+          : []),
+        ...(form.subscriber_id ? [`Subscriber ID: ${form.subscriber_id.value.trim()}`] : []),
         `Issue: ${categorySelect.value} — ${subcategorySelect.value}`,
         ...extraValues.filter(({ val }) => val).map(({ def, val }) => `${def.label}: ${val}`),
         `Affected: ${scope === "multiple" ? `Multiple numbers (${numbers.length})` : "Single number"}`,
@@ -584,6 +601,12 @@
       formData.append("affected_scope", scope);
       formData.append("msisdn", numbers.map((n) => n.msisdn).join(", "));
       formData.append("iccid", numbers.map((n) => n.iccid).join(", "));
+      if (form.financial_account_number) {
+        formData.append("financial_account_number", form.financial_account_number.value.trim());
+      }
+      if (form.subscriber_id) {
+        formData.append("subscriber_id", form.subscriber_id.value.trim());
+      }
       extraValues.forEach(({ def, val }) => formData.append(def.id, val));
 
       if (fileInput.files.length > 0) {

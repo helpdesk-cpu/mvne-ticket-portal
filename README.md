@@ -69,6 +69,18 @@ This page is also where the **extra follow-up fields** feature (below) is
 actually configured — `config-canal.js` isn't just a copy of the generic
 config like `config-afgri.js` currently is.
 
+It also has two extra always-required fields not on the other pages -
+**Financial account number** and **Subscriber ID** - since every Canal+
+ticket needs the account identified regardless of issue type. These are
+hardcoded into `canal-connect.html` (`#financial_account_number` /
+`#subscriber_id`) and feature-detected in `script.js` (`form.financial_account_number` /
+`form.subscriber_id` - only validated/submitted when the element exists on
+the page), so the generic and AFGRI pages are unaffected. Same
+`form_allowed_params` rule as `msisdn`/`iccid` applies if you want these to
+land as real ticket columns rather than just body text:
+`Setting.set('form_allowed_params', [..., 'financial_account_number', 'subscriber_id'])`
+(after creating matching Object Manager attributes).
+
 ### g) Extra follow-up fields per issue type
 
 Some issue types need specific information MVNE would otherwise have to
