@@ -31,7 +31,7 @@ const TICKET_PORTAL_CONFIG = {
   ISSUE_CATEGORIES: [
     {
       category: "SIM Swap",
-      subcategories: ["Lost or stolen SIM", "Damaged SIM", "Device upgrade"],
+      subcategories: ["Lost or stolen SIM", "Damaged SIM", "Device upgrade", "Change SIM ICCID"],
       extraFields: [
         {
           id: "new_sim_iccid",
