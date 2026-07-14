@@ -18,11 +18,14 @@ endpoint by design, since it's meant to be embeddable on any site).
 |------|---------|
 | `index.html` | The generic ticket form markup. |
 | `afgri-connect.html` | AFGRI Connect branded version of the same form (see below). |
+| `canal-connect.html` | Canal+ / Multichoice branded version of the same form (see below). |
 | `assets/style.css` | Shared styling (structure, form controls, scanner modal). |
 | `assets/style-afgri.css` | AFGRI color/branding overrides, loaded only by `afgri-connect.html`. |
+| `assets/style-canal.css` | Canal+ color/branding overrides, loaded only by `canal-connect.html`. |
 | `assets/config.js` | **Edit this** — Zammad URL, issue categories, priorities (used by `index.html`). |
 | `assets/config-afgri.js` | Same shape as `config.js`, used by `afgri-connect.html`. |
-| `assets/script.js` | Validation + submission logic (Zammad `form_config`/`form_submit` handshake) — shared by both pages, unmodified. |
+| `assets/config-canal.js` | Same shape as `config.js`, used by `canal-connect.html` — also the one with `extraFields` configured (see below). |
+| `assets/script.js` | Validation + submission logic (Zammad `form_config`/`form_submit` handshake) — shared by all pages, unmodified per client. |
 
 ### AFGRI Connect branded page
 
@@ -49,6 +52,60 @@ Two things worth knowing if you maintain this:
 To add another client-branded page later, copy `afgri-connect.html` +
 `config-afgri.js` as a template, swap the palette in a new `style-<client>.css`
 override file, and leave `script.js` alone.
+
+### Canal+ / Multichoice branded page
+
+`canal-connect.html` follows the exact same pattern as the AFGRI page, using
+Canal+'s own colors (`#03151C` near-black / white — Canal+ itself has had no
+official public hex codes since their 1995 black-and-white identity, so
+these are taken from the myCANAL streaming platform's published theme
+instead, which is the closest confirmed source). Zammad tracks Multichoice
+and Canal-plus (plus their `Clone:` variants) as one merged client called
+"Canal+" for reporting purposes (see `mvne_superset/runbook.md` — "Canal+
+backfill"), so that's the name used here too rather than the separate
+underlying org names.
+
+This page is also where the **extra follow-up fields** feature (below) is
+actually configured — `config-canal.js` isn't just a copy of the generic
+config like `config-afgri.js` currently is.
+
+### g) Extra follow-up fields per issue type
+
+Some issue types need specific information MVNE would otherwise have to
+chase up separately with a follow-up email/call — e.g. a SIM Swap ticket is
+incomplete without the replacement SIM's ICCID. Rather than hardcoding this
+per page, any category in `ISSUE_CATEGORIES` (`assets/config-canal.js`) can
+declare an `extraFields` array:
+
+```js
+{
+  category: "SIM Swap",
+  subcategories: [...],
+  extraFields: [
+    {
+      id: "new_sim_iccid",       // used as the FormData field name + Zammad param name
+      label: "New SIM ICCID",    // shown as the field label and in the ticket body
+      type: "iccid",             // "iccid" gets the barcode-scan button + 10-digit auto-prefix; "text" is a plain input
+      placeholder: "ICCID of the replacement SIM",
+      hint: "Optional helper text shown under the field",
+      required: true,
+    },
+  ],
+},
+```
+
+When a client picks that category, the extra field(s) render automatically
+right under "Issue detail", get validated the same way as any other
+required field, and are included both in the ticket body text (always) and
+as a same-named `FormData` field on submit (lands as a real ticket column
+only if allow-listed via `form_allowed_params`, same as `msisdn`/`iccid`
+above — same one-time Object Manager + Rails console steps apply to any new
+`id` you add here).
+
+Currently only **SIM Swap** has an extra field configured (the new SIM's
+ICCID) on the Canal+ page specifically — the generic and AFGRI pages don't
+have any `extraFields` set, so nothing extra renders for them; add more as
+you identify which other issue types need it.
 
 ## 1. One-time Zammad admin setup (required before this will work at all)
 

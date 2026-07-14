@@ -20,6 +20,7 @@
   const scannerStatus = document.getElementById("scanner-status");
   const scannerCloseBtn = document.getElementById("scanner-close-btn");
   const scannerManualBtn = document.getElementById("scanner-manual-btn");
+  const extraFieldsContainer = document.getElementById("extra-fields");
 
   const MAX_NUMBERS = cfg.MAX_AFFECTED_NUMBERS || 10;
 
@@ -202,6 +203,68 @@
     prioritySelect.appendChild(opt);
   });
 
+  // ---------------------------------------------------------------------
+  // Extra per-issue-type follow-up fields (config-driven). Some issue types
+  // need specific information MVNE would otherwise have to chase up
+  // separately (e.g. a SIM Swap needs the replacement SIM's ICCID) - listing
+  // `extraFields` on a category in config.js renders them here automatically.
+  // ---------------------------------------------------------------------
+  function currentExtraFieldDefs() {
+    const entry = cfg.ISSUE_CATEGORIES.find((c) => c.category === categorySelect.value);
+    return (entry && entry.extraFields) || [];
+  }
+
+  function renderExtraFields(entry) {
+    extraFieldsContainer.innerHTML = "";
+    const fieldDefs = (entry && entry.extraFields) || [];
+
+    fieldDefs.forEach((def) => {
+      const wrapper = document.createElement("div");
+      wrapper.className = "field";
+      wrapper.dataset.extraFieldId = def.id;
+
+      const label = document.createElement("label");
+      label.textContent = def.required ? `${def.label} *` : def.label;
+      wrapper.appendChild(label);
+
+      let input;
+      if (def.type === "iccid") {
+        const group = document.createElement("div");
+        group.className = "iccid-input-group";
+        input = document.createElement("input");
+        input.type = "text";
+        input.placeholder = def.placeholder || "";
+        input.addEventListener("focusout", () => {
+          input.value = normalizeIccid(input.value);
+        });
+        const scanBtn = document.createElement("button");
+        scanBtn.type = "button";
+        scanBtn.className = "scan-iccid-btn";
+        scanBtn.title = "Scan barcode with camera";
+        scanBtn.textContent = "📷";
+        scanBtn.addEventListener("click", () => openScanner(input));
+        group.appendChild(input);
+        group.appendChild(scanBtn);
+        wrapper.appendChild(group);
+      } else {
+        input = document.createElement("input");
+        input.type = "text";
+        input.placeholder = def.placeholder || "";
+        wrapper.appendChild(input);
+      }
+      input.className = "extra-field-input";
+
+      if (def.hint) {
+        const hint = document.createElement("span");
+        hint.className = "hint";
+        hint.textContent = def.hint;
+        wrapper.appendChild(hint);
+      }
+
+      extraFieldsContainer.appendChild(wrapper);
+    });
+  }
+
   categorySelect.addEventListener("change", () => {
     const entry = cfg.ISSUE_CATEGORIES.find((c) => c.category === categorySelect.value);
     subcategorySelect.innerHTML = "";
@@ -214,6 +277,7 @@
       placeholder.textContent = "Select an issue type first...";
       subcategorySelect.appendChild(placeholder);
       subcategorySelect.disabled = true;
+      renderExtraFields(null);
       return;
     }
 
@@ -232,6 +296,7 @@
     });
     subcategorySelect.disabled = false;
     clearFieldError(subcategorySelect);
+    renderExtraFields(entry);
   });
 
   function setStatus(kind, message) {
@@ -357,6 +422,25 @@
       }
     });
 
+    currentExtraFieldDefs().forEach((def) => {
+      const wrapper = extraFieldsContainer.querySelector(`[data-extra-field-id="${def.id}"]`);
+      if (!wrapper) return;
+      const input = wrapper.querySelector(".extra-field-input");
+      if (def.type === "iccid") {
+        input.value = normalizeIccid(input.value);
+      }
+      const val = input.value.trim();
+      if (def.required && !val) {
+        fieldError(input, `${def.label} is required.`);
+        ok = false;
+      } else if (val && def.type === "iccid" && !isValidIccid(val)) {
+        fieldError(input, "Enter a valid ICCID (18-22 digits, found on the SIM card).");
+        ok = false;
+      } else {
+        clearFieldError(input);
+      }
+    });
+
     if (fileInput.files.length > 0) {
       const file = fileInput.files[0];
       if (file.size > cfg.MAX_ATTACHMENT_BYTES) {
@@ -462,12 +546,19 @@
         iccid: row.querySelector(".number-iccid").value.trim(),
       }));
 
+      const extraValues = currentExtraFieldDefs().map((def) => {
+        const wrapper = extraFieldsContainer.querySelector(`[data-extra-field-id="${def.id}"]`);
+        const val = wrapper ? wrapper.querySelector(".extra-field-input").value.trim() : "";
+        return { def, val };
+      });
+
       const bodyLines = [
         form.description.value.trim(),
         "",
         "-- Submitted via client ticket portal --",
         `Company: ${form.company.value.trim()}`,
         `Issue: ${categorySelect.value} — ${subcategorySelect.value}`,
+        ...extraValues.filter(({ val }) => val).map(({ def, val }) => `${def.label}: ${val}`),
         `Affected: ${scope === "multiple" ? `Multiple numbers (${numbers.length})` : "Single number"}`,
         ...numbers.map((n, i) => `  ${i + 1}. MSISDN: ${n.msisdn}  |  ICCID: ${n.iccid}`),
         `Priority requested: ${priorityLabel}`,
@@ -493,6 +584,7 @@
       formData.append("affected_scope", scope);
       formData.append("msisdn", numbers.map((n) => n.msisdn).join(", "));
       formData.append("iccid", numbers.map((n) => n.iccid).join(", "));
+      extraValues.forEach(({ def, val }) => formData.append(def.id, val));
 
       if (fileInput.files.length > 0) {
         formData.append("file[]", fileInput.files[0]);
@@ -508,6 +600,7 @@
       subcategorySelect.innerHTML =
         '<option value="" disabled selected>Select an issue type first...</option>';
       subcategorySelect.disabled = true;
+      extraFieldsContainer.innerHTML = "";
       setStatus(
         "success",
         ticketNumber

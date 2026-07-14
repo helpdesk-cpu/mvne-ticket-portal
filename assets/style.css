@@ -62,6 +62,18 @@ form {
   grid-column: 1 / -1;
 }
 
+/* Populated dynamically per issue type (see config.js `extraFields`) - stays
+   collapsed with no extra gap when the chosen issue type has none. */
+.extra-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 20px;
+}
+
+.extra-fields:empty {
+  display: none;
+}
+
 label {
   font-size: 0.9rem;
   font-weight: 600;

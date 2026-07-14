@@ -1,0 +1,102 @@
+/* ---------------------------------------------------------------------------
+   Canal+ branding layer. Loaded AFTER style.css - only overrides the shared
+   CSS variables (so every existing component - inputs, buttons, errors, the
+   scanner modal - automatically re-colors) plus the extra header/hero/footer
+   blocks specific to this page.
+
+   Canal+'s own brand identity has been black-and-white since 1995 (no
+   official public hex codes from Canal+ itself) - colors here are taken
+   from the myCANAL streaming platform's published theme instead:
+   #03151C (near-black), #FFFFFF (white), #202124 (dark gray).
+   --------------------------------------------------------------------------- */
+
+:root {
+  --primary: #03151c; /* Canal+ / myCANAL near-black */
+  --primary-dark: #000000;
+  --ink: #202124; /* myCANAL dark gray text */
+  --muted: #6b7076;
+  --ok: #1b8a3d;
+  --error: #c9302c;
+  --bg: #f2f3f4;
+  --card-bg: #ffffff;
+  --border: #dcdfe2;
+}
+
+body {
+  background: var(--bg);
+}
+
+.canal-topbar {
+  background: #03151c;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.canal-topbar .canal-wordmark {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+
+.canal-topbar .canal-wordmark .plus {
+  color: #fff;
+  font-weight: 800;
+}
+
+.canal-hero {
+  background: linear-gradient(135deg, #000000 0%, #03151c 60%, #202124 130%);
+  color: #fff;
+  padding: 40px 20px 32px;
+  text-align: center;
+}
+
+.canal-hero-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+}
+
+.canal-hero h1 {
+  margin: 0 0 8px;
+  font-size: 1.6rem;
+}
+
+.canal-hero p {
+  max-width: 560px;
+  margin: 0 auto;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.canal-footer {
+  background: #03151c;
+  color: rgba(255, 255, 255, 0.75);
+  text-align: center;
+  padding: 20px;
+  font-size: 0.85rem;
+}
+
+.canal-footer a {
+  color: #ffffff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.canal-footer a:hover {
+  text-decoration: underline;
+}
+
+/* The generic page-header isn't used on this page (replaced by the hero
+   above), but keep the form card's top margin consistent with the rest of
+   the site's spacing. */
+.page {
+  padding-top: 0;
+}
+
+.page form {
+  margin-top: 24px;
+}
