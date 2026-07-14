@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MVNE Support — Log a Ticket</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <h1>MVNE Support</h1>
+      <p>Log a support ticket with our helpdesk. Fields marked * are required.</p>
+    </header>
+
+    <form id="ticket-form" novalidate>
+      <div class="grid">
+        <div class="field">
+          <label for="company">Company / Client name *</label>
+          <input type="text" id="company" name="company" autocomplete="organization" required />
+        </div>
+
+        <div class="field">
+          <label for="contact_name">Your name *</label>
+          <input type="text" id="contact_name" name="contact_name" autocomplete="name" required />
+        </div>
+
+        <div class="field">
+          <label for="email">Contact email *</label>
+          <input type="email" id="email" name="email" autocomplete="email" required />
+        </div>
+
+        <div class="field field-wide">
+          <label>How many numbers are affected? *</label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="affected_scope" value="single" checked />
+              Single number
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="affected_scope" value="multiple" />
+              Multiple numbers
+            </label>
+          </div>
+        </div>
+
+        <div class="field field-wide">
+          <label>Affected MSISDN / ICCID *</label>
+          <span class="hint">Provide at least the MSISDN or the ICCID for each number - both are helpful, but not required.</span>
+          <div id="number-rows"></div>
+          <button type="button" id="add-number-btn" class="link-btn" hidden>
+            + Add another number
+          </button>
+        </div>
+
+        <div class="field">
+          <label for="issue-category">Issue type *</label>
+          <select id="issue-category" name="issue_category" required>
+            <option value="" disabled selected>Select an issue type...</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="issue-subcategory">Issue detail *</label>
+          <select id="issue-subcategory" name="issue_subcategory" required disabled>
+            <option value="" disabled selected>Select an issue type first...</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="priority">Priority</label>
+          <select id="priority" name="priority"></select>
+        </div>
+
+        <div class="field field-wide">
+          <label for="description">Describe the issue *</label>
+          <textarea id="description" name="description" rows="5" required></textarea>
+        </div>
+
+        <div class="field field-wide">
+          <label for="attachment">Attachment (optional)</label>
+          <input type="file" id="attachment" name="attachment" />
+          <span id="attachment-hint" class="hint"></span>
+        </div>
+      </div>
+
+      <div id="form-status" class="form-status" hidden></div>
+
+      <button type="submit" id="submit-btn">Submit ticket</button>
+    </form>
+
+    <template id="number-row-template">
+      <div class="number-row">
+        <div class="field">
+          <label>MSISDN</label>
+          <input type="tel" class="number-msisdn" placeholder="e.g. 0821234567" />
+        </div>
+        <div class="field">
+          <label>ICCID</label>
+          <div class="iccid-input-group">
+            <input type="text" class="number-iccid" placeholder="10-digit serial or full ICCID" />
+            <button type="button" class="scan-iccid-btn" title="Scan barcode with camera">📷</button>
+          </div>
+          <span class="hint">Tip: you can enter just the last 10 digits printed on the SIM, or scan the barcode.</span>
+        </div>
+        <button type="button" class="remove-row-btn" title="Remove this number" hidden>&times;</button>
+      </div>
+    </template>
+
+    <div id="scanner-modal" class="scanner-modal" hidden>
+      <div class="scanner-box">
+        <button type="button" id="scanner-close-btn" class="scanner-close" aria-label="Close scanner">&times;</button>
+        <div class="scanner-video-wrap">
+          <video id="scanner-video" playsinline muted></video>
+          <div class="scanner-guide"></div>
+        </div>
+        <p id="scanner-status" class="scanner-status">
+          Point your camera at the ICCID barcode on the SIM card.
+        </p>
+        <button type="button" id="scanner-manual-btn" class="link-btn scanner-manual-btn">
+          Enter ICCID manually instead
+        </button>
+      </div>
+    </div>
+
+    <footer class="page-footer">
+      <p>Tickets are logged directly with the MVNE helpdesk (Zammad).</p>
+    </footer>
+  </div>
+
+  <script src="assets/config.js"></script>
+  <script src="assets/script.js"></script>
+</body>
+</html>

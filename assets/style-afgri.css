@@ -1,0 +1,100 @@
+/* ---------------------------------------------------------------------------
+   AFGRI Connect branding layer. Loaded AFTER style.css - only overrides the
+   shared CSS variables (so every existing component - inputs, buttons,
+   errors, the scanner modal - automatically re-colors) plus the extra
+   header/hero/footer blocks specific to this page.
+
+   Colors pulled from afgri.co.za's own Tailwind theme tokens
+   (--color-primary-blue, --color-primary-green, etc.) so this actually
+   matches their live site rather than guessing at a "corporate" palette.
+   --------------------------------------------------------------------------- */
+
+:root {
+  --primary: #1d388c; /* AFGRI primary blue */
+  --primary-dark: #142a66;
+  --ink: #0b1215; /* AFGRI light-mode primary text */
+  --muted: #898b8e; /* AFGRI primary gray */
+  --ok: #0db14b; /* AFGRI primary green doubles as the success color */
+  --error: #e13c4b; /* AFGRI's own error red */
+  --bg: #f2f2f7; /* AFGRI base gray page background */
+  --card-bg: #ffffff;
+  --border: #e5e7eb;
+}
+
+body {
+  background: var(--bg);
+}
+
+.afgri-topbar {
+  background: #ffffff;
+  border-bottom: 3px solid #0db14b;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.afgri-topbar .afgri-wordmark {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #1d388c;
+}
+
+.afgri-topbar .afgri-wordmark span {
+  color: #0db14b;
+}
+
+.afgri-hero {
+  background: linear-gradient(135deg, #101c42 0%, #1d388c 55%, #0db14b 130%);
+  color: #fff;
+  padding: 40px 20px 32px;
+  text-align: center;
+}
+
+.afgri-hero-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 12px;
+}
+
+.afgri-hero h1 {
+  margin: 0 0 8px;
+  font-size: 1.6rem;
+}
+
+.afgri-hero p {
+  max-width: 560px;
+  margin: 0 auto;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.afgri-footer {
+  background: #101c42;
+  color: rgba(255, 255, 255, 0.75);
+  text-align: center;
+  padding: 20px;
+  font-size: 0.85rem;
+}
+
+.afgri-footer a {
+  color: #6fe3a4;
+  text-decoration: none;
+}
+
+.afgri-footer a:hover {
+  text-decoration: underline;
+}
+
+/* The generic page-header isn't used on this page (replaced by the hero
+   above), but keep the form card's top margin consistent with the rest of
+   the site's spacing. */
+.page {
+  padding-top: 0;
+}
+
+.page form {
+  margin-top: 24px;
+}
