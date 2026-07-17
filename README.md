@@ -114,10 +114,22 @@ only if allow-listed via `form_allowed_params`, same as `msisdn`/`iccid`
 above — same one-time Object Manager + Rails console steps apply to any new
 `id` you add here).
 
-Currently only **SIM Swap** has an extra field configured (the new SIM's
-ICCID) on the Canal+ page specifically — the generic and AFGRI pages don't
-have any `extraFields` set, so nothing extra renders for them; add more as
-you identify which other issue types need it.
+As of 2026-07-17, the Canal+ page has `extraFields` on: **SIM Swap**
+(New SIM ICCID), **Data** (Voucher ID, on every subcategory), and
+**Tariff migration** (Tariff package). The generic and AFGRI pages don't have
+any `extraFields` set, so nothing extra renders for them; add more as you
+identify which other issue types need it.
+
+`extraFields` can be declared at two levels, and both apply together when
+present:
+
+- **On the category** — shows for every subcategory under it (e.g. Data's
+  "Voucher ID" shows regardless of which Data subcategory is picked).
+- **On one subcategory** — make that subcategory entry `{ name, extraFields }`
+  instead of a plain string, and its fields only show when that specific
+  issue detail is picked. Used for Data > "Data transfer", which additionally
+  needs Old MSISDN + New MSISDN on top of the category-wide Voucher ID (see
+  `assets/config-canal.js`).
 
 ## 1. One-time Zammad admin setup (required before this will work at all)
 
@@ -243,8 +255,26 @@ This requires `issue_detail` to already be allow-listed per step (b) above
 | Data / Airtime Query | Airtime not loading | `airtime-not-loading` |
 | Data / Airtime Query | Bundle / package query | `bundle-package-query` |
 | Other | General inquiry | `other-general-inquiry` |
+| Data | Data transfer | `data-transfer` |
+| Data | Data activation | `data-activation` |
+| Data | Data invalidate | `data-invalidate` |
+| Pending confirmation | Errors | `pending-confirmation-errors` |
+| Pending confirmation | Unbar failed | `pending-confirmation-unbar-failed` |
+| Pending confirmation | Auto pending | `pending-confirmation-auto-pending` |
+| Eligibility increase | Reached usage limit | `eligibility-increase-usage-limit` |
+| CMP | Password reset | `cmp-password-reset` |
+| CMP | Credentials request | `cmp-credentials-request` |
+| Revenue Weaver | Password reset | `revenue-weaver-password-reset` |
+| Revenue Weaver | Credentials request | `revenue-weaver-credentials-request` |
+| SIM Lock | Location lock | `sim-lock-location` |
+| SIM Lock | Device lock | `sim-lock-device` |
+| SIM Lock | Compliance lock | `sim-lock-compliance` |
+| Rica | Rica failure | `rica-failure` |
+| Tariff migration | Migration failure | `tariff-migration-failure` |
 
-That's 23 small triggers (one per row) — mechanical but one-time. If you
+That's 40 small triggers (one per row) — mechanical but one-time. The last
+17 rows (Data through Tariff migration) were added 2026-07-17 for Canal+'s
+new categories; the first 23 are unchanged. If you
 add a new sub-category to `ISSUE_CATEGORIES` in `config.js` later, add its
 matching trigger here too, otherwise new tickets in that sub-category just
 won't get auto-tagged (nothing else breaks).

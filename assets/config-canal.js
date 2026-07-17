@@ -20,14 +20,20 @@ const TICKET_PORTAL_CONFIG = {
   // categories/subcategories here rather than letting clients free-type
   // one, so reporting doesn't fragment into near-duplicate values.
   //
-  // `extraFields` (optional, per category) renders extra follow-up inputs
-  // right under the Issue detail dropdown when that category is selected -
-  // use this for information MVNE would otherwise have to chase up
-  // separately (e.g. a SIM Swap needs the replacement SIM's ICCID up
-  // front, saving a round trip with the Multichoice/Canal+ agent). Each
-  // entry: { id, label, type: "text"|"iccid", placeholder, hint, required }.
-  // type "iccid" gets the same barcode-scan button and 10-digit auto-prefix
-  // convenience as the main ICCID fields above.
+  // `extraFields` (optional) renders extra follow-up inputs right under the
+  // Issue detail dropdown - use this for information MVNE would otherwise
+  // have to chase up separately (e.g. a SIM Swap needs the replacement SIM's
+  // ICCID up front). Each entry: { id, label, type: "text"|"iccid",
+  // placeholder, hint, required }. type "iccid" gets the same barcode-scan
+  // button and 10-digit auto-prefix convenience as the main ICCID fields.
+  //
+  // Can be set at TWO levels, and both apply together when present:
+  // - On the category itself -> shows for every subcategory under it (e.g.
+  //   SIM Swap's "New SIM ICCID", or Data's "Voucher ID" below).
+  // - On one subcategory, by making that entry `{ name, extraFields }`
+  //   instead of a plain string -> shows only when that specific issue
+  //   detail is picked (e.g. Data > "Data transfer" additionally needs Old/
+  //   New MSISDN, but "Data activation"/"Data invalidate" don't).
   ISSUE_CATEGORIES: [
     {
       category: "SIM Swap",
@@ -66,6 +72,79 @@ const TICKET_PORTAL_CONFIG = {
     {
       category: "Data / Airtime Query",
       subcategories: ["Data not loading", "Airtime not loading", "Bundle / package query"],
+    },
+    {
+      category: "Data",
+      subcategories: [
+        {
+          name: "Data transfer",
+          extraFields: [
+            {
+              id: "old_msisdn",
+              label: "Old MSISDN",
+              type: "text",
+              placeholder: "e.g. 0821234567",
+              required: true,
+            },
+            {
+              id: "new_msisdn",
+              label: "New MSISDN",
+              type: "text",
+              placeholder: "e.g. 0821234567",
+              required: true,
+            },
+          ],
+        },
+        "Data activation",
+        "Data invalidate",
+      ],
+      // Applies to every subcategory above (Data transfer / activation / invalidate).
+      extraFields: [
+        {
+          id: "voucher_id",
+          label: "Voucher ID",
+          type: "text",
+          placeholder: "e.g. 11426266",
+          required: true,
+        },
+      ],
+    },
+    {
+      category: "Pending confirmation",
+      subcategories: ["Errors", "Unbar failed", "Auto pending"],
+    },
+    {
+      category: "Eligibility increase",
+      subcategories: ["Reached usage limit"],
+    },
+    {
+      category: "CMP",
+      subcategories: ["Password reset", "Credentials request"],
+    },
+    {
+      category: "Revenue Weaver",
+      subcategories: ["Password reset", "Credentials request"],
+    },
+    {
+      category: "SIM Lock",
+      subcategories: ["Location lock", "Device lock", "Compliance lock"],
+    },
+    {
+      category: "Rica",
+      subcategories: ["Rica failure"],
+    },
+    {
+      category: "Tariff migration",
+      subcategories: ["Migration failure"],
+      extraFields: [
+        {
+          id: "tariff_package",
+          label: "Tariff package",
+          type: "text",
+          placeholder: "e.g. upgrade/downgrade to 400GB/110GB/55GB/25GB",
+          required: true,
+        },
+      ],
     },
     {
       category: "Other",

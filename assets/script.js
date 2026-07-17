@@ -209,16 +209,25 @@
   // separately (e.g. a SIM Swap needs the replacement SIM's ICCID) - listing
   // `extraFields` on a category in config.js renders them here automatically.
   // ---------------------------------------------------------------------
+  // A `subcategories` entry can be a plain string (no fields of its own) or
+  // `{ name, extraFields }` when that specific issue detail needs its own
+  // follow-up fields on top of whatever the category already declares (e.g.
+  // Data > Data transfer needs Old/New MSISDN in addition to the Voucher ID
+  // every Data subcategory needs).
   function currentExtraFieldDefs() {
     const entry = cfg.ISSUE_CATEGORIES.find((c) => c.category === categorySelect.value);
-    return (entry && entry.extraFields) || [];
+    if (!entry) return [];
+    const categoryFields = entry.extraFields || [];
+    const subEntry = (entry.subcategories || []).find(
+      (sub) => (typeof sub === "string" ? sub : sub.name) === subcategorySelect.value
+    );
+    const subFields = (subEntry && typeof subEntry === "object" && subEntry.extraFields) || [];
+    return [...categoryFields, ...subFields];
   }
 
-  function renderExtraFields(entry) {
+  function renderExtraFields(fieldDefs) {
     extraFieldsContainer.innerHTML = "";
-    const fieldDefs = (entry && entry.extraFields) || [];
-
-    fieldDefs.forEach((def) => {
+    (fieldDefs || []).forEach((def) => {
       const wrapper = document.createElement("div");
       wrapper.className = "field";
       wrapper.dataset.extraFieldId = def.id;
@@ -277,7 +286,7 @@
       placeholder.textContent = "Select an issue type first...";
       subcategorySelect.appendChild(placeholder);
       subcategorySelect.disabled = true;
-      renderExtraFields(null);
+      renderExtraFields([]);
       return;
     }
 
@@ -289,14 +298,20 @@
     subcategorySelect.appendChild(placeholder);
 
     entry.subcategories.forEach((sub) => {
+      const name = typeof sub === "string" ? sub : sub.name;
       const opt = document.createElement("option");
-      opt.value = sub;
-      opt.textContent = sub;
+      opt.value = name;
+      opt.textContent = name;
       subcategorySelect.appendChild(opt);
     });
     subcategorySelect.disabled = false;
     clearFieldError(subcategorySelect);
-    renderExtraFields(entry);
+    renderExtraFields(currentExtraFieldDefs());
+  });
+
+  subcategorySelect.addEventListener("change", () => {
+    clearFieldError(subcategorySelect);
+    renderExtraFields(currentExtraFieldDefs());
   });
 
   function setStatus(kind, message) {
