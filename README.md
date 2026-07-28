@@ -378,6 +378,42 @@ add another client-branded page later, give it its own `client_brand` value
 and add a matching trigger row here, otherwise its tickets will just sit in
 the default Group untagged (nothing else breaks).
 
+### i) Add each client as an Organization (customer-side grouping)
+
+Group (h, above) and Organization are different things in Zammad: **Group**
+controls which agent team/queue handles a ticket; **Organization** controls
+which customer/account it's linked to — used for reporting and for letting
+multiple contacts at the same client see each other's tickets in the
+customer portal. You generally want both set up per client, not just one.
+
+**Manage > Organizations > New Organization**, per client:
+
+1. **Name** — match exactly what's already used elsewhere (e.g. the
+   `client_name` values in `mvne_superset/datasets.md`, and the
+   `agent-dashboard/assets/config.js` → `BRAND_COLORS` keys) so reporting and
+   the agent dashboard's color-coding don't fragment into near-duplicates.
+   For Clicks: `Clicks`.
+2. **Domain** (optional) — if that client's staff submit from a shared
+   corporate email domain (e.g. `clicks.co.za`), enter it and enable
+   **"Domain based assignment"**. Any ticket/customer with an email on that
+   domain then auto-links to the Organization with no manual step.
+3. **Shared organization** — on if contacts at the same client should see
+   each other's tickets in the portal, off if each contact should only see
+   their own.
+
+**Caveat specific to this form:** the public `form_submit` endpoint has no
+way to set Organization directly (same limitation as Group/tags above), so a
+ticket only gets linked automatically if the submitter's email matches the
+domain from step 2 — a farm/store contact submitting from a personal Gmail
+address won't auto-link and needs an agent to assign the Organization
+manually. If that's common for a given client, check whether your Zammad
+version's Trigger actions include an "Organization" option (**Manage >
+Triggers > New Trigger** → action dropdown) — if it does, add `Organization
+→ <client>` to that client's `client_brand` trigger in (h) so it's set
+automatically regardless of the submitter's email domain; not all Zammad
+versions expose Organization as a settable trigger action, so this needs
+checking against your instance rather than assuming it works.
+
 ## 2. Configure the form
 
 Edit `assets/config.js`:
