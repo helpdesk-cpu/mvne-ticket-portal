@@ -52,6 +52,20 @@ const TICKET_PORTAL_CONFIG = {
       subcategories: ["Data", "Voice", "Airtime"],
     },
     {
+      category: "Mobile App",
+      subcategories: ["Can't log in", "Number not showing", "App not phoning"],
+      extraFields: [
+        {
+          id: "device_os",
+          label: "Device OS",
+          type: "select",
+          placeholder: "Select OS...",
+          options: ["Android", "iOS"],
+          required: true,
+        },
+      ],
+    },
+    {
       category: "Other",
       subcategories: ["General inquiry"],
     },

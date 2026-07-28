@@ -255,6 +255,21 @@
         group.appendChild(input);
         group.appendChild(scanBtn);
         wrapper.appendChild(group);
+      } else if (def.type === "select") {
+        input = document.createElement("select");
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        placeholder.textContent = def.placeholder || "Select...";
+        input.appendChild(placeholder);
+        (def.options || []).forEach((opt) => {
+          const optionEl = document.createElement("option");
+          optionEl.value = typeof opt === "string" ? opt : opt.value;
+          optionEl.textContent = typeof opt === "string" ? opt : opt.label;
+          input.appendChild(optionEl);
+        });
+        wrapper.appendChild(input);
       } else {
         input = document.createElement("input");
         input.type = "text";

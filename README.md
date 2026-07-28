@@ -115,7 +115,7 @@ declare an `extraFields` array:
     {
       id: "new_sim_iccid",       // used as the FormData field name + Zammad param name
       label: "New SIM ICCID",    // shown as the field label and in the ticket body
-      type: "iccid",             // "iccid" gets the barcode-scan button + 10-digit auto-prefix; "text" is a plain input
+      type: "iccid",             // "iccid" gets the barcode-scan button + 10-digit auto-prefix; "text" is a plain input; "select" renders a dropdown (needs `options`)
       placeholder: "ICCID of the replacement SIM",
       hint: "Optional helper text shown under the field",
       required: true,
@@ -123,6 +123,20 @@ declare an `extraFields` array:
   ],
 },
 ```
+
+For `type: "select"`, add an `options` array instead of (or alongside) `placeholder`/`hint` — each entry is either a plain string (used as both value and label) or `{ label, value }`:
+
+```js
+{
+  category: "Mobile App",
+  subcategories: ["Can't log in", "Number not showing", "App not phoning"],
+  extraFields: [
+    { id: "device_os", label: "Device OS", type: "select", options: ["Android", "iOS"], required: true },
+  ],
+},
+```
+
+See `assets/config-clicks.js` — this is what the Clicks page's Mobile App category uses.
 
 When a client picks that category, the extra field(s) render automatically
 right under "Issue detail", get validated the same way as any other
