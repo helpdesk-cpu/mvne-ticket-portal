@@ -313,28 +313,29 @@ add a new sub-category to `ISSUE_CATEGORIES` in `config.js` later, add its
 matching trigger here too, otherwise new tickets in that sub-category just
 won't get auto-tagged (nothing else breaks).
 
-### h) Route tickets to the correct Group by client brand
+### h) Route tickets to the correct Organization by client brand
 
 Before this form existed, client separation happened by email domain —
-each client's mail arrived at a dedicated inbound address/channel already
-tied to a Group in Zammad. That doesn't carry over to this form: **every**
-branded page (`afgri-connect.html`, `canal-connect.html`,
-`clicks-connect.html`, `index.html`) posts to the exact same
-`support.mvne.co.za` Form channel, and that channel only has ONE configured
-destination Group (`form_ticket_create_group_id`, step 1a) — there is no way
-for the client-side JavaScript to choose a different Group per submission.
-Relying on the submitter's email domain alone isn't reliable either, since
-farm/store staff sometimes submit with a personal Gmail address instead of a
-corporate one.
+Zammad already has Organizations for `AFGRI` (`afgri.co.za`), `Canal-plus`
+(`canal-plus.com`), `Multichoice` (`multichoice.co.za`), `Digital Mobile`,
+`eMobile`, `DSG`, `MVNE` (plus `Clone:` variants of Canal-plus/Multichoice),
+each with **domain-based assignment** already enabled — Zammad auto-links a
+ticket's customer to the matching Organization purely from the sender's
+email domain, no trigger required. **There are no per-client Groups on this
+instance at all** (confirmed live via the API — only `Users` and
+`Users::MVNE` exist), so despite an earlier draft of this section, Group
+routing was never the real mechanism and isn't what's implemented below.
 
-The fix follows the exact same pattern as (e) above, just keyed on client
-identity instead of issue type. Each branded page now carries a fixed
-hidden field baked into the page itself (not something the client can see or
-edit) —
+Domain-assignment alone isn't reliable for this form, though — farm/store
+staff sometimes submit with a personal Gmail address instead of a corporate
+one, so their ticket would have no Organization at all. The fix follows the
+exact same pattern as (e) above, just keyed on client identity instead of
+issue type: each branded page carries a fixed hidden field baked into the
+page itself (not something the client can see or edit) —
 
 ```html
 <input type="hidden" name="client_brand" value="AFGRI" />   <!-- afgri-connect.html -->
-<input type="hidden" name="client_brand" value="Canal+" />  <!-- canal-connect.html -->
+<input type="hidden" name="client_brand" value="Canal+" />  <!-- canal-connect.html, not wired to a trigger, see below -->
 <input type="hidden" name="client_brand" value="Clicks" />  <!-- clicks-connect.html -->
 ```
 
@@ -342,77 +343,91 @@ edit) —
 does `form.financial_account_number`/`form.subscriber_id` — always included
 in the ticket body text, and appended to the submitted `FormData` when
 present. `index.html` (the generic page, free-typed "Company / Client name")
-deliberately has no `client_brand` field, so it's unaffected and keeps
-landing in the default Form-channel Group.
+deliberately has no `client_brand` field, so it's unaffected.
 
-To turn that into actual Group routing:
+**Live as of 2026-07-28** (created via the API with an admin token):
 
-1. **Manage > Object Manager > Ticket > New attribute** — create
-   `client_brand` (Data type: Text), same as step (b).
-2. Rails console:
-   ```ruby
-   Setting.set('form_allowed_params', ['msisdn', 'iccid', 'issue', 'issue_detail', 'client_brand'])
-   ```
-   (extend whichever list you already set in step (b) rather than replacing it).
-3. **Manage > Triggers > New Trigger**, one per client:
-   Condition `Ticket → Client Brand → is → <value>` → Actions `Group →
-   <client's Group>` **and** `Add Tag → <tag>` (the tag keeps this aligned
-   with the `client_name` values Superset already reports on — see
-   `mvne_superset/datasets.md`).
+- `client_brand` Object Manager attribute on Ticket (id 64), migrated and active.
+- Organization `Clicks` (id 11) — created with no domain, since it wasn't
+  confirmed which email domain Clicks staff actually submit from; add one
+  later via **Manage > Organizations > Clicks > Domain** +
+  "Domain based assignment" once known (see (i) below).
+- Trigger **"Client brand assignment - Clicks"** (id 17): condition
+  `client_brand contains "Clicks"` → sets `Organization = Clicks` (id 11).
+- Trigger **"Client brand assignment - AFGRI (ticket portal)"** (id 18): same
+  pattern → sets `Organization = AFGRI` (id 3), as a fallback for AFGRI form
+  submitters whose email doesn't match `afgri.co.za`.
+- Both triggers use `execution_condition_mode: "selective"` (fires once,
+  when the condition first becomes true) rather than `"always"` — this
+  matters because `client_brand` never changes after ticket creation, so an
+  `"always"` trigger would keep re-forcing the Organization back on every
+  later ticket update, fighting an agent who manually reassigns it. The
+  pre-existing "Afgri assignment" trigger (id 15, a narrower fixup that
+  reassigns `customer_id` when an *article subject* starts with "Afgri") is
+  unrelated to this mechanism and was left untouched.
+- **Canal+ deliberately has no trigger.** The existing Organizations are
+  named `Canal-plus` and `Multichoice` (Zammad's real underlying orgs,
+  separate from the merged `"Canal+"` label Superset reports under, see
+  `mvne_superset/runbook.md` — "Canal+ backfill") — there's no single
+  Organization that `client_brand: "Canal+"` should unambiguously map to, so
+  Canal+ portal tickets rely on domain-based assignment only, same as today.
+  Revisit this if/when Canal-plus and Multichoice are consolidated into one
+  real Organization.
 
-| client_brand | Group | Tag |
-|---|---|---|
-| AFGRI | *(pick/confirm the existing AFGRI Group)* | `client-afgri` |
-| Canal+ | *(pick/confirm the existing Canal+ Group)* | `client-canalplus` |
-| Clicks | *(create or pick a Clicks Group)* | `client-clicks` |
+**The one remaining manual step — cannot be done via the API:**
+`client_brand` still needs to be added to the `form_allowed_params` Setting,
+otherwise the form endpoint silently drops the field on every submission and
+neither trigger above will ever actually fire on a real ticket. This setting
+isn't exposed by `/api/v1/settings` at all (confirmed — it's missing from
+the full list, and looking it up directly 500s), so it genuinely requires
+Rails console access on the server, same as originally documented in (b):
 
-The Group names above are placeholders — fill in whatever Groups your
-instance already uses for these clients (check existing email-channel
-routing/triggers to match names exactly), or create new ones under **Manage
-> Groups** first if they don't exist yet.
+```ruby
+Setting.set('form_allowed_params', ['msisdn', 'iccid', 'issue', 'issue_detail', 'client_brand'])
+```
 
-Like the tagging trick in (e), the ticket is briefly created in the default
-Form-channel Group and then moved by the trigger immediately after — this is
-normal Zammad trigger behavior, not a race condition to worry about. If you
-add another client-branded page later, give it its own `client_brand` value
-and add a matching trigger row here, otherwise its tickets will just sit in
-the default Group untagged (nothing else breaks).
+(extend whichever list is already set from step (b), don't just replace it —
+check the current value first with `Setting.get('form_allowed_params')`).
+
+If you add another client-branded page later, give it its own
+`client_brand` value, decide whether it needs its own Organization (see (i)
+below) and a matching trigger, and add a row to the list above — otherwise
+its tickets just won't get an Organization from this mechanism (nothing else
+breaks; domain-based assignment still applies if the submitter's email
+matches).
 
 ### i) Add each client as an Organization (customer-side grouping)
 
-Group (h, above) and Organization are different things in Zammad: **Group**
-controls which agent team/queue handles a ticket; **Organization** controls
-which customer/account it's linked to — used for reporting and for letting
-multiple contacts at the same client see each other's tickets in the
-customer portal. You generally want both set up per client, not just one.
+Organization in Zammad controls which customer/account a ticket is linked
+to — used for reporting and for letting multiple contacts at the same
+client see each other's tickets in the customer portal. This is the actual
+mechanism (h) above relies on; there's no separate Group layer on this
+instance (confirmed live — see (h)).
 
-**Manage > Organizations > New Organization**, per client:
+The `Clicks` Organization (id 11) already exists, created via the API with
+no domain set. To finish it off, or to add a future client's Organization by
+hand: **Manage > Organizations > New Organization**:
 
 1. **Name** — match exactly what's already used elsewhere (e.g. the
    `client_name` values in `mvne_superset/datasets.md`, and the
    `agent-dashboard/assets/config.js` → `BRAND_COLORS` keys) so reporting and
    the agent dashboard's color-coding don't fragment into near-duplicates.
-   For Clicks: `Clicks`.
-2. **Domain** (optional) — if that client's staff submit from a shared
-   corporate email domain (e.g. `clicks.co.za`), enter it and enable
-   **"Domain based assignment"**. Any ticket/customer with an email on that
-   domain then auto-links to the Organization with no manual step.
+2. **Domain** — if that client's staff submit from a shared corporate email
+   domain, enter it and enable **"Domain based assignment"**, matching
+   `AFGRI`/`Canal-plus`/etc. Clicks' domain was intentionally left unset —
+   fill it in once you confirm which domain (`clicks.co.za`,
+   `clicksgroup.co.za`, or something else) Clicks staff actually use, so
+   domain-matched tickets link up the same way the other clients' do.
 3. **Shared organization** — on if contacts at the same client should see
    each other's tickets in the portal, off if each contact should only see
    their own.
 
-**Caveat specific to this form:** the public `form_submit` endpoint has no
-way to set Organization directly (same limitation as Group/tags above), so a
-ticket only gets linked automatically if the submitter's email matches the
-domain from step 2 — a farm/store contact submitting from a personal Gmail
-address won't auto-link and needs an agent to assign the Organization
-manually. If that's common for a given client, check whether your Zammad
-version's Trigger actions include an "Organization" option (**Manage >
-Triggers > New Trigger** → action dropdown) — if it does, add `Organization
-→ <client>` to that client's `client_brand` trigger in (h) so it's set
-automatically regardless of the submitter's email domain; not all Zammad
-versions expose Organization as a settable trigger action, so this needs
-checking against your instance rather than assuming it works.
+Confirmed on this instance (checked live, not assumed): `ticket.organization_id`
+**is** a settable Trigger `perform` action — see the two `client_brand`
+triggers in (h), which already do exactly this. So once `form_allowed_params`
+is updated (the one remaining manual step in (h)), Organization assignment
+for form submissions is fully automatic and doesn't depend on the
+submitter's email domain matching at all.
 
 ## 2. Configure the form
 
