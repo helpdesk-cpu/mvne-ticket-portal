@@ -600,6 +600,7 @@
         "",
         "-- Submitted via client ticket portal --",
         `Company: ${form.company.value.trim()}`,
+        ...(form.client_brand ? [`Client brand: ${form.client_brand.value.trim()}`] : []),
         ...(form.financial_account_number
           ? [`Financial account number: ${form.financial_account_number.value.trim()}`]
           : []),
@@ -631,6 +632,9 @@
       formData.append("affected_scope", scope);
       formData.append("msisdn", numbers.map((n) => n.msisdn).join(", "));
       formData.append("iccid", numbers.map((n) => n.iccid).join(", "));
+      if (form.client_brand) {
+        formData.append("client_brand", form.client_brand.value.trim());
+      }
       if (form.financial_account_number) {
         formData.append("financial_account_number", form.financial_account_number.value.trim());
       }

@@ -54,7 +54,9 @@ Two things worth knowing if you maintain this:
 
 To add another client-branded page later, copy `afgri-connect.html` +
 `config-afgri.js` as a template, swap the palette in a new `style-<client>.css`
-override file, and leave `script.js` alone.
+override file, add a `<input type="hidden" name="client_brand" value="<Client>" />`
+inside the `<form>` (see "Route tickets to the correct Group by client brand"
+below), and leave `script.js` alone.
 
 ### Canal+ / Multichoice branded page
 
@@ -310,6 +312,71 @@ new categories; the first 23 are unchanged. If you
 add a new sub-category to `ISSUE_CATEGORIES` in `config.js` later, add its
 matching trigger here too, otherwise new tickets in that sub-category just
 won't get auto-tagged (nothing else breaks).
+
+### h) Route tickets to the correct Group by client brand
+
+Before this form existed, client separation happened by email domain —
+each client's mail arrived at a dedicated inbound address/channel already
+tied to a Group in Zammad. That doesn't carry over to this form: **every**
+branded page (`afgri-connect.html`, `canal-connect.html`,
+`clicks-connect.html`, `index.html`) posts to the exact same
+`support.mvne.co.za` Form channel, and that channel only has ONE configured
+destination Group (`form_ticket_create_group_id`, step 1a) — there is no way
+for the client-side JavaScript to choose a different Group per submission.
+Relying on the submitter's email domain alone isn't reliable either, since
+farm/store staff sometimes submit with a personal Gmail address instead of a
+corporate one.
+
+The fix follows the exact same pattern as (e) above, just keyed on client
+identity instead of issue type. Each branded page now carries a fixed
+hidden field baked into the page itself (not something the client can see or
+edit) —
+
+```html
+<input type="hidden" name="client_brand" value="AFGRI" />   <!-- afgri-connect.html -->
+<input type="hidden" name="client_brand" value="Canal+" />  <!-- canal-connect.html -->
+<input type="hidden" name="client_brand" value="Clicks" />  <!-- clicks-connect.html -->
+```
+
+`script.js` feature-detects `form.client_brand` the same way it already
+does `form.financial_account_number`/`form.subscriber_id` — always included
+in the ticket body text, and appended to the submitted `FormData` when
+present. `index.html` (the generic page, free-typed "Company / Client name")
+deliberately has no `client_brand` field, so it's unaffected and keeps
+landing in the default Form-channel Group.
+
+To turn that into actual Group routing:
+
+1. **Manage > Object Manager > Ticket > New attribute** — create
+   `client_brand` (Data type: Text), same as step (b).
+2. Rails console:
+   ```ruby
+   Setting.set('form_allowed_params', ['msisdn', 'iccid', 'issue', 'issue_detail', 'client_brand'])
+   ```
+   (extend whichever list you already set in step (b) rather than replacing it).
+3. **Manage > Triggers > New Trigger**, one per client:
+   Condition `Ticket → Client Brand → is → <value>` → Actions `Group →
+   <client's Group>` **and** `Add Tag → <tag>` (the tag keeps this aligned
+   with the `client_name` values Superset already reports on — see
+   `mvne_superset/datasets.md`).
+
+| client_brand | Group | Tag |
+|---|---|---|
+| AFGRI | *(pick/confirm the existing AFGRI Group)* | `client-afgri` |
+| Canal+ | *(pick/confirm the existing Canal+ Group)* | `client-canalplus` |
+| Clicks | *(create or pick a Clicks Group)* | `client-clicks` |
+
+The Group names above are placeholders — fill in whatever Groups your
+instance already uses for these clients (check existing email-channel
+routing/triggers to match names exactly), or create new ones under **Manage
+> Groups** first if they don't exist yet.
+
+Like the tagging trick in (e), the ticket is briefly created in the default
+Form-channel Group and then moved by the trigger immediately after — this is
+normal Zammad trigger behavior, not a race condition to worry about. If you
+add another client-branded page later, give it its own `client_brand` value
+and add a matching trigger row here, otherwise its tickets will just sit in
+the default Group untagged (nothing else breaks).
 
 ## 2. Configure the form
 
