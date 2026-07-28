@@ -19,12 +19,15 @@ endpoint by design, since it's meant to be embeddable on any site).
 | `index.html` | The generic ticket form markup. |
 | `afgri-connect.html` | AFGRI Connect branded version of the same form (see below). |
 | `canal-connect.html` | Canal+ / Multichoice branded version of the same form (see below). |
+| `clicks-connect.html` | Clicks Connect branded version of the same form (see below). |
 | `assets/style.css` | Shared styling (structure, form controls, scanner modal). |
 | `assets/style-afgri.css` | AFGRI color/branding overrides, loaded only by `afgri-connect.html`. |
 | `assets/style-canal.css` | Canal+ color/branding overrides, loaded only by `canal-connect.html`. |
+| `assets/style-clicks.css` | Clicks color/branding overrides, loaded only by `clicks-connect.html`. |
 | `assets/config.js` | **Edit this** — Zammad URL, issue categories, priorities (used by `index.html`). |
 | `assets/config-afgri.js` | Same shape as `config.js`, used by `afgri-connect.html`. |
 | `assets/config-canal.js` | Same shape as `config.js`, used by `canal-connect.html` — also the one with `extraFields` configured (see below). |
+| `assets/config-clicks.js` | Same shape as `config.js`, used by `clicks-connect.html`. |
 | `assets/script.js` | Validation + submission logic (Zammad `form_config`/`form_submit` handshake) — shared by all pages, unmodified per client. |
 
 ### AFGRI Connect branded page
@@ -80,6 +83,21 @@ the page), so the generic and AFGRI pages are unaffected. Same
 land as real ticket columns rather than just body text:
 `Setting.set('form_allowed_params', [..., 'financial_account_number', 'subscriber_id'])`
 (after creating matching Object Manager attributes).
+
+### Clicks Connect branded page
+
+`clicks-connect.html` follows the exact same pattern as the AFGRI page —
+`config-clicks.js` is currently an exact copy of `config.js`, edit it
+independently if Clicks needs different categories/priorities later.
+
+One thing worth knowing if you maintain this: both `clicks.co.za` and
+`clicksgroup.co.za` returned `403 Forbidden` on every automated fetch made
+while building this page, and no official public brand-guideline hex code
+turned up in a search either. Clicks' brand is dark blue (confirmed by the
+client, not red as first guessed) — so unlike AFGRI's confirmed Tailwind
+tokens or Canal+'s myCANAL-sourced palette, the navy in `style-clicks.css`
+(`#00205b`/`#00143b`) is a **placeholder**, not a verified brand value.
+Replace it if you get the real hex from Clicks or their brand guidelines.
 
 ### g) Extra follow-up fields per issue type
 
